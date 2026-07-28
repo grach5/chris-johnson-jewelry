@@ -18,12 +18,14 @@
   function closeNav() {
     navMobile.classList.remove("is-open");
     navToggle.setAttribute("aria-expanded", "false");
+    navToggle.setAttribute("aria-label", "Открыть меню");
     document.body.style.overflow = "";
   }
 
   function openNav() {
     navMobile.classList.add("is-open");
     navToggle.setAttribute("aria-expanded", "true");
+    navToggle.setAttribute("aria-label", "Закрыть меню");
     document.body.style.overflow = "hidden";
   }
 
