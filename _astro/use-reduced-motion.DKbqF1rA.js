@@ -1,0 +1,1 @@
+import{o as e,t}from"./react.Od-laFSK.js";import{a as n,i as r,o as i}from"./react.2exqxXZB.js";var a=e(t(),1);function o(){!n.current&&r();let[e]=(0,a.useState)(i.current);return e}export{o as t};
