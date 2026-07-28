@@ -174,4 +174,74 @@
 
     updateParallax();
   }
+
+  /* ---------------------------------------------------------------------
+     6. Лупа ювелира — круглая зона увеличения на фото украшений
+     Следует за курсором (mousemove) / пальцем (touchmove), показывая
+     масштабированную копию того же фото через фоновое изображение линзы.
+     Полностью отключено при prefers-reduced-motion: reduce — вместо лупы
+     остаётся статичная кнопка-подсказка (см. CSS), обработчики не вешаются.
+     --------------------------------------------------------------------- */
+  if (!prefersReducedMotion) {
+    var LOUPE_ZOOM = 2.4;
+    var loupeEls = document.querySelectorAll("[data-loupe]");
+
+    loupeEls.forEach(function (el) {
+      var img = el.querySelector("img");
+      var lens = el.querySelector(".loupe-lens");
+      if (!img || !lens) { return; }
+
+      var rect = null;
+
+      function activate() {
+        rect = el.getBoundingClientRect();
+        if (!rect.width || !rect.height) { rect = null; return; }
+        if (!lens.style.backgroundImage) {
+          lens.style.backgroundImage = "url('" + (img.currentSrc || img.src) + "')";
+        }
+        lens.style.backgroundSize = (rect.width * LOUPE_ZOOM).toFixed(0) + "px " + (rect.height * LOUPE_ZOOM).toFixed(0) + "px";
+        el.classList.add("is-loupe-active");
+      }
+
+      function track(clientX, clientY) {
+        if (!rect) { return; }
+        var lensSize = lens.offsetWidth || 130;
+        var px = Math.max(0, Math.min(rect.width, clientX - rect.left));
+        var py = Math.max(0, Math.min(rect.height, clientY - rect.top));
+
+        lens.style.left = (px - lensSize / 2).toFixed(1) + "px";
+        lens.style.top = (py - lensSize / 2).toFixed(1) + "px";
+        lens.style.backgroundPosition =
+          (-(px * LOUPE_ZOOM - lensSize / 2)).toFixed(1) + "px " +
+          (-(py * LOUPE_ZOOM - lensSize / 2)).toFixed(1) + "px";
+      }
+
+      function deactivate() {
+        el.classList.remove("is-loupe-active");
+        rect = null;
+      }
+
+      el.addEventListener("mouseenter", function (e) {
+        activate();
+        track(e.clientX, e.clientY);
+      });
+      el.addEventListener("mousemove", function (e) {
+        if (!rect) { activate(); }
+        track(e.clientX, e.clientY);
+      });
+      el.addEventListener("mouseleave", deactivate);
+
+      el.addEventListener("touchstart", function (e) {
+        if (!e.touches || !e.touches.length) { return; }
+        activate();
+        track(e.touches[0].clientX, e.touches[0].clientY);
+      }, { passive: true });
+      el.addEventListener("touchmove", function (e) {
+        if (!e.touches || !e.touches.length) { return; }
+        track(e.touches[0].clientX, e.touches[0].clientY);
+      }, { passive: true });
+      el.addEventListener("touchend", deactivate);
+      el.addEventListener("touchcancel", deactivate);
+    });
+  }
 })();

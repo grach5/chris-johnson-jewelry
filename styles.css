@@ -311,6 +311,32 @@ p.lead { font-size: var(--fs-lead); color: var(--c-text-muted); max-width: 60ch;
   overflow: hidden;
   border-bottom: 1px solid var(--c-line);
 }
+/* Реальное фото — драгоценность крупным планом, база стека слоёв hero.
+   Поверх неё лежат hero-glow (световое пятно) и hero-facet (гранёный узор) —
+   это и есть «усиление» существующих эффектов светом и графикой поверх фото. */
+.hero-photo {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.hero-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 72% 42%;
+  opacity: 0.62;
+}
+.hero-photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(100deg, var(--c-bg) 0%, rgba(14, 11, 20, 0.88) 30%, rgba(14, 11, 20, 0.4) 62%, rgba(14, 11, 20, 0.72) 100%),
+    linear-gradient(to top, var(--c-bg) 0%, transparent 26%);
+}
+
 .hero-glow {
   position: absolute;
   top: -20%;
@@ -321,6 +347,7 @@ p.lead { font-size: var(--fs-lead); color: var(--c-text-muted); max-width: 60ch;
   max-height: 700px;
   background: radial-gradient(circle, rgba(190, 143, 161, 0.18), transparent 70%);
   pointer-events: none;
+  z-index: 1;
 }
 .hero-facet {
   position: absolute;
@@ -329,10 +356,11 @@ p.lead { font-size: var(--fs-lead); color: var(--c-text-muted); max-width: 60ch;
   opacity: 0.9;
   transform: translateY(var(--parallax-hero));
   will-change: transform;
+  z-index: 2;
 }
 .hero-facet svg { width: 100%; height: 100%; }
 
-.hero-content { position: relative; max-width: 780px; }
+.hero-content { position: relative; z-index: 3; max-width: 780px; }
 .hero-kicker {
   display: flex;
   align-items: center;
@@ -412,6 +440,58 @@ p.lead { font-size: var(--fs-lead); color: var(--c-text-muted); max-width: 60ch;
 }
 .about-text p { color: var(--c-text-muted); margin-bottom: var(--sp-3); }
 .about-text p:last-child { margin-bottom: 0; }
+
+/* about-visual — реальное фото мастерской сверху, медальон-подпись мастера
+   снизу (как оттиск печати под фотографией — не выдаёт себя за портрет). */
+.about-visual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-5);
+  width: min(340px, 100%);
+  margin-inline: auto;
+}
+
+.about-photo {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  border-radius: var(--radius-l);
+  overflow: hidden;
+  border: 1px solid var(--c-metal-line);
+  box-shadow: var(--shadow-deep);
+  isolation: isolate;
+}
+.about-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.about-photo::after {
+  content: "";
+  position: absolute; inset: 0;
+  background-image: var(--facet-tile);
+  background-size: 110px 110px;
+  opacity: 0.16;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+.about-photo figcaption {
+  position: absolute;
+  left: var(--sp-3); right: var(--sp-3); bottom: var(--sp-3);
+  z-index: 2;
+  font-size: 0.78rem;
+  letter-spacing: var(--ls-wide);
+  color: var(--c-metal-100);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+}
+
+.about-visual .monogram-frame {
+  width: min(160px, 46%);
+  margin: 0;
+}
+.about-visual .monogram-frame .monogram { font-size: clamp(1.5rem, 5vw, 2.1rem); }
 
 .monogram-frame {
   position: relative;
@@ -579,13 +659,25 @@ p.lead { font-size: var(--fs-lead); color: var(--c-text-muted); max-width: 60ch;
   border: 1px solid var(--c-line-strong);
   isolation: isolate;
 }
+.gallery-tile img {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--dur-l) var(--ease);
+}
+[data-loupe]:hover img { transform: scale(1.04); }
 .gallery-tile::after {
   content: "";
   position: absolute; inset: 0;
+  z-index: 1;
   background-image: var(--facet-tile);
   background-size: 90px 90px;
-  opacity: 0.45;
+  opacity: 0.18;
   mix-blend-mode: overlay;
+  pointer-events: none;
 }
 .gallery-tile figcaption {
   position: absolute;
@@ -596,12 +688,95 @@ p.lead { font-size: var(--fs-lead); color: var(--c-text-muted); max-width: 60ch;
   color: var(--c-metal-100);
   text-shadow: 0 2px 12px rgba(0,0,0,0.6);
 }
+/* фон-заглушка на случай, если фото не загрузится — сохраняет исходную
+   гранёную палитру плиток вместо пустого провала */
 .gallery-tile.g1 { background: radial-gradient(120% 120% at 20% 10%, #3a2c47 0%, #17111f 60%), linear-gradient(160deg, #241b30, #100c17); }
 .gallery-tile.g2 { background: conic-gradient(from 210deg at 60% 40%, #2d2438, #59435e, #241b30, #2d2438); }
 .gallery-tile.g3 { background: linear-gradient(135deg, #221c2f 0%, #4e2f3e 45%, #1a1522 100%); }
 .gallery-tile.g4 { background: radial-gradient(100% 140% at 80% 100%, #3a2c47, #120e18 65%); }
 .gallery-tile.g5 { background: linear-gradient(200deg, #1c1725, #3c2b3a 50%, #1a1522); }
 .gallery-tile.g6 { background: conic-gradient(from 40deg at 30% 70%, #241b30, #6b4a58, #241b30); }
+
+/* -------------------------------------------------------------------------
+   10b. ЛУПА ЮВЕЛИРА + СВЕТОВЫЕ ИСКРЫ
+   Наведение на фото украшения открывает круглую зону увеличения (лупу),
+   которая следует за курсором и показывает грани камня крупным планом.
+   Искры — случайные вспышки света, имитирующие игру света в бриллианте.
+   При prefers-reduced-motion: reduce лупа и искры отключаются полностью;
+   остаётся статичная кнопка-подсказка (.loupe-badge) без анимации.
+   ------------------------------------------------------------------------- */
+[data-loupe] { position: relative; cursor: zoom-in; }
+
+.loupe-lens {
+  position: absolute;
+  top: 0; left: 0;
+  width: clamp(92px, 30vw, 148px);
+  height: clamp(92px, 30vw, 148px);
+  border-radius: 50%;
+  clip-path: circle(50% at 50% 50%);
+  border: 2px solid var(--c-metal-300);
+  box-shadow:
+    0 0 0 1px rgba(14, 11, 20, 0.6),
+    0 18px 40px -12px rgba(0, 0, 0, 0.75),
+    inset 0 0 22px rgba(0, 0, 0, 0.3);
+  background-repeat: no-repeat;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 4;
+  transition: opacity var(--dur-s) var(--ease);
+}
+[data-loupe].is-loupe-active .loupe-lens { opacity: 1; }
+
+.loupe-badge {
+  position: absolute;
+  right: var(--sp-2);
+  top: var(--sp-2);
+  width: 34px; height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(14, 11, 20, 0.55);
+  border: 1px solid var(--c-line-strong);
+  color: var(--c-metal-300);
+  opacity: 0.85;
+  z-index: 3;
+  pointer-events: none;
+  transition: opacity var(--dur-s) var(--ease), transform var(--dur-s) var(--ease);
+}
+.loupe-badge svg { width: 16px; height: 16px; }
+[data-loupe]:hover .loupe-badge,
+[data-loupe].is-loupe-active .loupe-badge { opacity: 0; transform: scale(0.8); }
+
+.sparkles { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 2; }
+.sparkles i {
+  position: absolute;
+  width: 8px; height: 8px;
+  background: radial-gradient(circle, #fff 0%, var(--c-stone-300) 45%, transparent 75%);
+  clip-path: polygon(50% 0%, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0% 50%, 39% 39%);
+  opacity: 0;
+  animation: sparkle-flash 4.6s ease-in-out infinite;
+}
+.sparkles i:nth-child(1) { top: 18%; left: 22%; width: 9px; height: 9px; animation-delay: 0s;    animation-duration: 3.8s; }
+.sparkles i:nth-child(2) { top: 64%; left: 76%; width: 6px; height: 6px; animation-delay: 1.3s;  animation-duration: 5.1s; }
+.sparkles i:nth-child(3) { top: 40%; left: 56%; width: 11px; height: 11px; animation-delay: 2.4s; animation-duration: 5.6s; }
+.sparkles i:nth-child(4) { top: 80%; left: 32%; width: 7px; height: 7px; animation-delay: 0.7s;  animation-duration: 4.3s; }
+.sparkles i:nth-child(5) { top: 10%; left: 66%; width: 8px; height: 8px; animation-delay: 3.2s;  animation-duration: 5.3s; }
+
+@keyframes sparkle-flash {
+  0%, 100% { opacity: 0; transform: scale(0.3) rotate(0deg); }
+  45%      { opacity: 0; transform: scale(0.3) rotate(10deg); }
+  55%      { opacity: 1; transform: scale(1) rotate(20deg); }
+  68%      { opacity: 0; transform: scale(0.5) rotate(25deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loupe-lens, .sparkles { display: none !important; }
+  [data-loupe] { cursor: default; }
+  [data-loupe]:hover img { transform: none; }
+  [data-loupe]:hover .loupe-badge,
+  [data-loupe].is-loupe-active .loupe-badge { opacity: 0.85; transform: none; }
+}
 
 @media (min-width: 720px) {
   .gallery-grid { grid-template-columns: repeat(3, 1fr); }
