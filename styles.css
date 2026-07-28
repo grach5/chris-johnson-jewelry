@@ -81,6 +81,10 @@
   --dur-s: 180ms;
   --dur-m: 420ms;
   --dur-l: 900ms;
+
+  /* --- Параллакс гранёного узора (значения пишет JS при скролле) --- */
+  --parallax-bg: 0px;
+  --parallax-hero: 0px;
 }
 
 /* -------------------------------------------------------------------------
@@ -119,16 +123,20 @@ body {
 }
 
 body::before {
-  /* тонкая гранёная текстура на весь фон страницы */
+  /* тонкая гранёная текстура на весь фон страницы —
+     верх/низ вынесены за пределы вьюпорта (буфер), чтобы параллакс-сдвиг
+     (JS двигает --parallax-bg при скролле) не обнажал край без текстуры */
   content: "";
   position: fixed;
-  inset: 0;
+  inset: -160px 0;
   z-index: 0;
   pointer-events: none;
   opacity: 0.5;
   background-image: var(--facet-tile);
   background-size: 220px 220px;
   mix-blend-mode: soft-light;
+  transform: translateY(var(--parallax-bg));
+  will-change: transform;
 }
 
 :root { --facet-tile: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="220" height="220" viewBox="0 0 220 220"><g fill="none" stroke="%23C3C6CE" stroke-width="0.6" opacity="0.35"><path d="M110 6 L206 110 L110 214 L14 110 Z"/><path d="M110 6 L110 214 M14 110 L206 110"/><path d="M110 6 L60 110 L110 214"/><path d="M110 6 L160 110 L110 214"/></g></svg>'); }
@@ -319,6 +327,8 @@ p.lead { font-size: var(--fs-lead); color: var(--c-text-muted); max-width: 60ch;
   inset: 0;
   pointer-events: none;
   opacity: 0.9;
+  transform: translateY(var(--parallax-hero));
+  will-change: transform;
 }
 .hero-facet svg { width: 100%; height: 100%; }
 
@@ -408,24 +418,56 @@ p.lead { font-size: var(--fs-lead); color: var(--c-text-muted); max-width: 60ch;
   width: min(320px, 100%);
   aspect-ratio: 1;
   margin-inline: auto;
+  perspective: 900px;
+}
+/* .monogram-disc — медальон медленно поворачивается на свету:
+   preserve-3d + непрерывная rotateY-анимация (12–18с), плюс блик,
+   имитирующий отражение грани камня, движущийся тем же циклом. */
+.monogram-disc {
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   border: 1px solid var(--c-metal-line);
   border-radius: 50%;
+  transform-style: preserve-3d;
+  animation: gem-turn 16s ease-in-out infinite;
 }
-.monogram-frame::before {
+.monogram-disc::before {
   content: "";
   position: absolute;
   inset: 14px;
   border: 1px solid var(--c-line-strong);
   border-radius: 50%;
 }
-.monogram-frame .monogram {
+.monogram-disc::after {
+  /* блик — как свет, скользящий по грани поворачивающегося камня */
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border-radius: 50%;
+  background: linear-gradient(115deg, transparent 34%, rgba(243, 241, 236, 0.16) 50%, transparent 66%);
+  background-size: 260% 260%;
+  animation: gem-sheen 16s ease-in-out infinite;
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+}
+.monogram-disc .monogram {
+  position: relative;
+  z-index: 2;
   font-family: var(--f-display);
   font-size: clamp(3rem, 6vw, 4.6rem);
   letter-spacing: 0.05em;
   color: var(--c-metal-100);
+}
+@keyframes gem-turn {
+  0%, 100% { transform: rotateY(-14deg) rotateX(2deg); }
+  50%      { transform: rotateY(14deg) rotateX(-2deg); }
+}
+@keyframes gem-sheen {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
 }
 .monogram-frame .caption {
   position: absolute;
@@ -463,25 +505,55 @@ p.lead { font-size: var(--fs-lead); color: var(--c-text-muted); max-width: 60ch;
 /* -------------------------------------------------------------------------
    9. УСЛУГИ И ЦЕНЫ
    ------------------------------------------------------------------------- */
-.price-list { border-top: 1px solid var(--c-line); }
+.price-list {
+  border-top: 1px solid var(--c-line);
+  /* перспектива для 3D-наклона карточек-строк прайса при наведении */
+  perspective: 2000px;
+}
 .price-row {
+  position: relative;
   display: grid;
   grid-template-columns: 1fr auto;
   gap: var(--sp-3);
   align-items: baseline;
   padding: var(--sp-4) 0;
   border-bottom: 1px solid var(--c-line);
-  transition: padding-left var(--dur-m) var(--ease), border-color var(--dur-m) var(--ease);
+  transform-style: preserve-3d;
+  will-change: transform;
+  transition: padding-left var(--dur-m) var(--ease), border-color var(--dur-m) var(--ease), transform var(--dur-m) var(--ease);
 }
 .price-row:hover { padding-left: var(--sp-2); border-color: var(--c-metal-line); }
+/* пока курсор внутри строки — JS пишет transform напрямую (без transition),
+   чтобы наклон точно следовал за курсором; на mouseleave класс снимается
+   и включается базовый transition для плавного возврата в исходное положение */
+.price-row.is-tilting { transition: padding-left var(--dur-m) var(--ease), border-color var(--dur-m) var(--ease); }
+
+.price-row::before {
+  /* блик, имитирующий отражение света от грани камня — движется вместе с наклоном */
+  content: "";
+  position: absolute;
+  inset: 0 0 1px 0;
+  border-radius: var(--radius-m);
+  background: radial-gradient(circle at var(--glare-x, 50%) var(--glare-y, 0%), rgba(243, 241, 236, 0.16), rgba(227, 195, 206, 0.07) 40%, transparent 70%);
+  opacity: 0;
+  transition: opacity var(--dur-m) var(--ease);
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+}
+.price-row.is-tilting::before { opacity: 1; }
+
 .price-name { font-family: var(--f-display); font-size: 1.3rem; color: var(--c-metal-100); }
 .price-desc { display: block; font-family: var(--f-body); font-size: 0.86rem; color: var(--c-text-faint); margin-top: 4px; }
 .price-value {
+  position: relative;
   font-size: 1.05rem;
   color: var(--c-stone-300);
   white-space: nowrap;
   text-align: right;
+  transition: transform var(--dur-m) var(--ease);
 }
+/* цена «приподнимается» над строкой, как камень над оправой */
+.price-row.is-tilting .price-value { transform: translateZ(26px); }
 .price-value small { display: block; font-size: 0.7rem; letter-spacing: var(--ls-wide); text-transform: uppercase; color: var(--c-text-faint); }
 
 .price-note {

@@ -107,4 +107,71 @@
       setStatus("Заявка сформирована — продолжите отправку в открывшейся вкладке WhatsApp.");
     });
   }
+
+  /* ---------------------------------------------------------------------
+     4. 3D-наклон карточек прайса + блик грани камня
+     Полностью отключено при prefers-reduced-motion: reduce — эффект
+     не навешивается вовсе, а не просто ускоряется.
+     --------------------------------------------------------------------- */
+  if (!prefersReducedMotion) {
+    var MAX_TILT = 7; // градусы, ±7° — в пределах требуемых ±6-8°
+    var tiltRows = document.querySelectorAll(".price-row");
+
+    tiltRows.forEach(function (row) {
+      row.addEventListener("mouseenter", function () {
+        row.classList.add("is-tilting");
+      });
+
+      row.addEventListener("mousemove", function (e) {
+        var rect = row.getBoundingClientRect();
+        if (!rect.width || !rect.height) { return; }
+        var px = (e.clientX - rect.left) / rect.width;   // 0..1 слева направо
+        var py = (e.clientY - rect.top) / rect.height;   // 0..1 сверху вниз
+
+        var rotateX = (0.5 - py) * (MAX_TILT * 2);
+        var rotateY = (px - 0.5) * (MAX_TILT * 2);
+
+        row.style.transform = "rotateX(" + rotateX.toFixed(2) + "deg) rotateY(" + rotateY.toFixed(2) + "deg)";
+        row.style.setProperty("--glare-x", (px * 100).toFixed(1) + "%");
+        row.style.setProperty("--glare-y", (py * 100).toFixed(1) + "%");
+      });
+
+      row.addEventListener("mouseleave", function () {
+        row.classList.remove("is-tilting");
+        row.style.transform = "";
+      });
+    });
+  }
+
+  /* ---------------------------------------------------------------------
+     5. Параллакс гранёного узора при скролле (scroll + requestAnimationFrame,
+     без background-attachment: fixed — сдвиг через CSS-переменные и transform)
+     Полностью отключено при prefers-reduced-motion: reduce.
+     --------------------------------------------------------------------- */
+  if (!prefersReducedMotion) {
+    var rootEl = document.documentElement;
+    var parallaxTicking = false;
+
+    function updateParallax() {
+      var y = window.scrollY || window.pageYOffset || 0;
+      // фоновая текстура (position: fixed) — медленный, ограниченный сдвиг,
+      // буфер -160px в CSS гарантирует, что край не обнажится
+      var bgOffset = Math.max(-140, Math.min(140, y * 0.08));
+      // узор в hero — быстрее, но обрезан overflow:hidden секции .hero
+      var heroOffset = y * 0.22;
+
+      rootEl.style.setProperty("--parallax-bg", bgOffset.toFixed(1) + "px");
+      rootEl.style.setProperty("--parallax-hero", heroOffset.toFixed(1) + "px");
+      parallaxTicking = false;
+    }
+
+    window.addEventListener("scroll", function () {
+      if (!parallaxTicking) {
+        window.requestAnimationFrame(updateParallax);
+        parallaxTicking = true;
+      }
+    }, { passive: true });
+
+    updateParallax();
+  }
 })();
